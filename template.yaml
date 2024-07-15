@@ -1,0 +1,63 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  lambda-and-extension--sam
+
+  Sample SAM Template to Play Around with Lambdas and Lambda Extensions
+
+Globals:
+  Function:
+    Timeout: 3
+    Tracing: Disabled
+    LoggingConfig:
+      LogFormat: JSON
+Resources:
+  ExampleLayer:
+        Type: AWS::Serverless::LayerVersion
+        Properties:
+            LayerName: example-extension
+            Description: An example extension
+            ContentUri: extensions/example-extension/extension.zip
+            CompatibleRuntimes:
+              - nodejs18.x
+            LicenseInfo: 'MIT'
+            RetentionPolicy: Retain
+  HelloWorldFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: hello-world/
+      Handler: app.lambdaHandler
+      Runtime: nodejs18.x
+      Layers:
+        - !Ref ExampleLayer
+      Architectures:
+      - arm64
+      FunctionUrlConfig:
+        AuthType: AWS_IAM
+        InvokeMode: BUFFERED
+        Cors:
+          AllowOrigins:
+            - '*'
+          AllowMethods:
+            - GET
+          AllowHeaders:
+            - '*'
+
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: es2020
+        Sourcemap: true
+        EntryPoints:
+        - app.ts
+Outputs:
+  HelloWorldFunction:
+    Description: Hello World Lambda Function ARN
+    Value: !GetAtt HelloWorldFunction.Arn
+  HelloWorldFunctionIamRole:
+    Description: Implicit IAM Role created for Hello World function
+    Value: !GetAtt HelloWorldFunctionRole.Arn
+  HelloWorldFunctionUrl:
+    Description: Lambda Url for the Hello World function
+    Value: !GetAtt HelloWorldFunctionUrl.FunctionUrl
